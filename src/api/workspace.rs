@@ -1,4 +1,5 @@
-use crate::api::util::{client_version_from_headers, realtime_user_for_web_request, PayloadReader};
+use crate::api::billing::workspace_usage_and_limit_handler;
+use crate::api::util::{PayloadReader, client_version_from_headers, realtime_user_for_web_request};
 use crate::api::util::{compress_type_from_header_value, device_id_from_headers};
 use crate::api::ws::RealtimeServerAddr;
 use crate::biz;
@@ -7,7 +8,7 @@ use crate::biz::collab::database::check_if_row_document_collab_exists;
 use crate::biz::collab::ops::{
   get_user_favorite_folder_views, get_user_recent_folder_views, get_user_trash_folder_views,
 };
-use crate::biz::collab::utils::{collab_from_doc_state, DUMMY_UID};
+use crate::biz::collab::utils::{DUMMY_UID, collab_from_doc_state};
 use crate::biz::workspace;
 use crate::biz::workspace::duplicate::duplicate_view_tree_and_collab;
 use crate::biz::workspace::invite::{
@@ -32,15 +33,15 @@ use crate::biz::workspace::quick_note::{
   create_quick_note, delete_quick_note, list_quick_notes, update_quick_note,
 };
 use crate::domain::compression::{
-  blocking_decompress, decompress, CompressionType, X_COMPRESSION_TYPE,
+  CompressionType, X_COMPRESSION_TYPE, blocking_decompress, decompress,
 };
 use crate::state::AppState;
 use access_control::act::Action;
 use actix_web::web::{Bytes, Path, Payload};
 use actix_web::web::{Data, Json, PayloadConfig};
-use actix_web::{web, HttpResponse, ResponseError, Scope};
 use actix_web::{HttpRequest, Result};
-use anyhow::{anyhow, Context};
+use actix_web::{HttpResponse, ResponseError, Scope, web};
+use anyhow::{Context, anyhow};
 use app_error::{AppError, ErrorCode};
 use appflowy_collaborate::actix_ws::entities::{
   ClientGenerateEmbeddingMessage, ClientHttpStreamMessage, ClientHttpUpdateMessage,
@@ -48,7 +49,7 @@ use appflowy_collaborate::actix_ws::entities::{
 
 use bytes::BytesMut;
 use chrono::{DateTime, Duration, Utc};
-use collab::core::collab::{default_client_id, CollabOptions, DataSource};
+use collab::core::collab::{CollabOptions, DataSource, default_client_id};
 use collab::core::origin::CollabOrigin;
 use collab::entity::EncodedCollab;
 use collab::preclude::Collab;
@@ -56,10 +57,10 @@ use collab_database::entity::FieldType;
 use collab_document::document::Document;
 use collab_entity::CollabType;
 use collab_folder::timestamp;
+use collab_rt_entity::RealtimeMessage;
 use collab_rt_entity::collab_proto::{CollabDocStateParams, PayloadCompressionType};
 use collab_rt_entity::realtime_proto::HttpRealtimeMessage;
 use collab_rt_entity::user::RealtimeUser;
-use collab_rt_entity::RealtimeMessage;
 use collab_rt_protocol::collab_from_encode_collab;
 use database::user::select_uid_from_email;
 use database_entity::dto::PublishCollabItem;
@@ -304,6 +305,10 @@ pub fn workspace_scope() -> Scope {
       web::resource("/{workspace_id}/usage").route(web::get().to(get_workspace_usage_handler)),
     )
     .service(
+      web::resource("/{workspace_id}/usage-and-limit")
+        .route(web::get().to(workspace_usage_and_limit_handler)),
+    )
+    .service(
       web::resource("/published/{publish_namespace}")
         .route(web::get().to(get_default_published_collab_info_meta_handler)),
     )
@@ -364,6 +369,13 @@ pub fn workspace_scope() -> Scope {
     .service(
       web::resource("/{workspace_id}/folder").route(web::get().to(get_workspace_folder_handler)),
     )
+    .service(
+      web::resource("/{workspace_id}/view/{view_id}")
+        .route(web::get().to(get_workspace_view_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/views").route(web::get().to(get_workspace_views_handler)),
+    )
     .service(web::resource("/{workspace_id}/recent").route(web::get().to(get_recent_views_handler)))
     .service(
       web::resource("/{workspace_id}/favorite").route(web::get().to(get_favorite_views_handler)),
@@ -418,6 +430,30 @@ pub fn workspace_scope() -> Scope {
         .route(web::get().to(get_workspace_invite_code_handler))
         .route(web::delete().to(delete_workspace_invite_code_handler))
         .route(web::post().to(post_workspace_invite_code_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications")
+        .route(web::get().to(list_workspace_notifications_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications/unread-count")
+        .route(web::get().to(get_workspace_notifications_unread_count_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications/read")
+        .route(web::post().to(mark_workspace_notifications_read_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications/read-all")
+        .route(web::post().to(mark_workspace_notifications_read_all_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications/archive")
+        .route(web::post().to(archive_workspace_notifications_handler)),
+    )
+    .service(
+      web::resource("/{workspace_id}/notifications/archive-all")
+        .route(web::post().to(archive_workspace_notifications_all_handler)),
     )
 }
 
@@ -2485,6 +2521,179 @@ async fn get_workspace_folder_handler(
   )
   .await?;
   Ok(Json(AppResponse::Ok().with_data(folder_view)))
+}
+
+#[derive(serde::Deserialize)]
+struct QueryWorkspaceViews {
+  depth: Option<u32>,
+  view_ids: String,
+}
+
+#[derive(serde::Serialize)]
+struct WorkspaceViewsPayload {
+  views: Vec<FolderView>,
+}
+
+#[derive(serde::Serialize)]
+struct WorkspaceNotificationsPayload {
+  notifications: Vec<serde_json::Value>,
+  has_more: bool,
+}
+
+#[derive(serde::Serialize)]
+struct WorkspaceUnreadCountPayload {
+  unread_count: i64,
+}
+
+async fn get_workspace_view_handler(
+  user_uuid: UserUuid,
+  path: web::Path<(Uuid, Uuid)>,
+  state: Data<AppState>,
+  query: web::Query<QueryWorkspaceFolder>,
+  req: HttpRequest,
+) -> Result<Json<AppResponse<FolderView>>> {
+  let (workspace_id, view_id) = path.into_inner();
+  let depth = query.depth.unwrap_or(1).min(10);
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  let user = realtime_user_for_web_request(req.headers(), uid)?;
+  state
+    .workspace_access_control
+    .enforce_role_weak(&uid, &workspace_id, AFRole::Member)
+    .await?;
+  let folder_view =
+    biz::collab::ops::get_user_workspace_structure(&state, user, workspace_id, depth, &view_id)
+      .await?;
+  Ok(Json(AppResponse::Ok().with_data(folder_view)))
+}
+
+async fn get_workspace_views_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+  query: web::Query<QueryWorkspaceViews>,
+  req: HttpRequest,
+) -> Result<Json<AppResponse<WorkspaceViewsPayload>>> {
+  let workspace_id = workspace_id.into_inner();
+  let depth = query.depth.unwrap_or(1).min(10);
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_role_weak(&uid, &workspace_id, AFRole::Member)
+    .await?;
+
+  let mut views = Vec::new();
+  for view_id in query
+    .view_ids
+    .split(',')
+    .filter_map(|raw| Uuid::parse_str(raw).ok())
+  {
+    let user = realtime_user_for_web_request(req.headers(), uid)?;
+    let folder_view =
+      biz::collab::ops::get_user_workspace_structure(&state, user, workspace_id, depth, &view_id)
+        .await?;
+    views.push(folder_view);
+  }
+
+  Ok(Json(
+    AppResponse::Ok().with_data(WorkspaceViewsPayload { views }),
+  ))
+}
+
+async fn list_workspace_notifications_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+) -> Result<Json<AppResponse<WorkspaceNotificationsPayload>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+
+  Ok(Json(AppResponse::Ok().with_data(
+    WorkspaceNotificationsPayload {
+      notifications: Vec::new(),
+      has_more: false,
+    },
+  )))
+}
+
+async fn get_workspace_notifications_unread_count_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+) -> Result<Json<AppResponse<WorkspaceUnreadCountPayload>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+
+  Ok(Json(
+    AppResponse::Ok().with_data(WorkspaceUnreadCountPayload { unread_count: 0 }),
+  ))
+}
+
+async fn mark_workspace_notifications_read_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+  _payload: Json<serde_json::Value>,
+) -> Result<Json<AppResponse<()>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+  Ok(Json(AppResponse::Ok()))
+}
+
+async fn mark_workspace_notifications_read_all_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+  _payload: Json<serde_json::Value>,
+) -> Result<Json<AppResponse<()>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+  Ok(Json(AppResponse::Ok()))
+}
+
+async fn archive_workspace_notifications_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+  _payload: Json<serde_json::Value>,
+) -> Result<Json<AppResponse<()>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+  Ok(Json(AppResponse::Ok()))
+}
+
+async fn archive_workspace_notifications_all_handler(
+  user_uuid: UserUuid,
+  workspace_id: web::Path<Uuid>,
+  state: Data<AppState>,
+  _payload: Json<serde_json::Value>,
+) -> Result<Json<AppResponse<()>>> {
+  let workspace_id = workspace_id.into_inner();
+  let uid = state.user_cache.get_user_uid(&user_uuid).await?;
+  state
+    .workspace_access_control
+    .enforce_action(&uid, &workspace_id, Action::Read)
+    .await?;
+  Ok(Json(AppResponse::Ok()))
 }
 
 async fn get_recent_views_handler(

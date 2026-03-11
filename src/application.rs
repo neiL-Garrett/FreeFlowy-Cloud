@@ -16,11 +16,11 @@ use actix::{Actor, Supervisor};
 #[cfg(feature = "use_actix_cors")]
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
-use actix_session::storage::RedisSessionStore;
 use actix_session::SessionMiddleware;
+use actix_session::storage::RedisSessionStore;
 use actix_web::cookie::Key;
 use actix_web::middleware::NormalizePath;
-use actix_web::{dev::Server, web, web::Data, App, HttpResponse, HttpServer, Responder};
+use actix_web::{App, HttpResponse, HttpServer, Responder, dev::Server, web, web::Data};
 use anyhow::{Context, Error};
 use aws_sdk_s3::config::{Credentials, Region, SharedCredentialsProvider};
 use aws_sdk_s3::operation::create_bucket::CreateBucketError;
@@ -29,16 +29,16 @@ use aws_sdk_s3::types::{
 };
 use mailer::config::MailerSetting;
 use secrecy::ExposeSecret;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::sync::RwLock;
 use tracing::{error, info};
 
 use appflowy_ai_client::client::AppFlowyAIClient;
+use appflowy_collaborate::CollaborationServer;
 use appflowy_collaborate::actix_ws::server::RealtimeServerActor;
 use appflowy_collaborate::collab::cache::CollabCache;
 use appflowy_collaborate::collab::collab_store::CollabStoreImpl;
 use appflowy_collaborate::ws2::{CollabManager, WsServer};
-use appflowy_collaborate::CollaborationServer;
 use collab_stream::awareness_gossip::AwarenessGossip;
 use collab_stream::metrics::CollabStreamMetrics;
 use collab_stream::stream_router::{StreamRouter, StreamRouterOptions};
@@ -53,6 +53,7 @@ use snowflake::Snowflake;
 
 use crate::api::access_request::access_request_scope;
 use crate::api::ai::ai_completion_scope;
+use crate::api::billing::billing_scope;
 use crate::api::chat::chat_scope;
 use crate::api::data_import::data_import_scope;
 use crate::api::file_storage::file_storage_scope;
@@ -159,6 +160,7 @@ pub async fn run_actix_server(
       .service(ws_scope())
       .service(file_storage_scope())
       .service(chat_scope())
+      .service(billing_scope())
       .service(ai_completion_scope())
       .service(metrics_scope())
       .service(search_scope())

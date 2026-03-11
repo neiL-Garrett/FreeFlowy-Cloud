@@ -1,5 +1,6 @@
 pub mod access_request;
 pub mod ai;
+pub mod billing;
 pub mod chat;
 pub mod data_import;
 pub mod file_storage;
