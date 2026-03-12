@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>AppFlowy</title>
+    <title>FreeFlowy</title>
   </head>
   <body>
     <script>
@@ -53,7 +53,7 @@
         }, 1000);
       };
 
-      const openAppFlowy = (force) => {
+      const openFreeFlowy = (force) => {
         openSchema();
 
         if (force) return;
@@ -105,7 +105,7 @@
       document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('open-appflowy').addEventListener('click', (e) => {
           e.preventDefault();
-          openAppFlowy(true);
+          openFreeFlowy(true);
         });
 
         document.getElementById('download-link').addEventListener('click', (e) => {
@@ -113,13 +113,13 @@
           window.open(getFallbackLink(), '_current');
         });
 
-        openAppFlowy();
+        openFreeFlowy();
 
       });
     </script>
 
-    <h1>Opening AppFlowy</h1>
-    <p>If AppFlowy does not open, you can click <a id="open-appflowy" href="#">here</a> to launch the app.</p>
-    <p>If AppFlowy is not installed, you can <a id="download-link" href="#">download AppFlowy manually</a>.</p>
+    <h1>Opening FreeFlowy</h1>
+    <p>If FreeFlowy does not open, you can click <a id="open-appflowy" href="#">here</a> to launch the app.</p>
+    <p>If FreeFlowy is not installed, you can <a id="download-link" href="#">download FreeFlowy manually</a>.</p>
   </body>
 </html>

@@ -21,7 +21,7 @@ impl AFCloudMailer {
     param: WorkspaceInviteMailerParam,
   ) -> Result<(), anyhow::Error> {
     let subject = format!(
-      "{} invited you to {} in AppFlowy",
+      "{} invited you to {} in FreeFlowy",
       param.username, param.workspace_name
     );
     self
@@ -52,7 +52,7 @@ impl AFCloudMailer {
     param: WorkspaceAccessRequestMailerParam,
   ) -> Result<(), anyhow::Error> {
     let subject = format!(
-      "{} requested access to {} in AppFlowy",
+      "{} requested access to {} in FreeFlowy",
       param.username, param.workspace_name
     );
     self
@@ -93,7 +93,7 @@ impl AFCloudMailer {
     param: &PageMentionNotificationMailerParam,
   ) -> Result<(), anyhow::Error> {
     let subject = format!(
-      "{} has mentioned you in {} in AppFlowy",
+      "{} has mentioned you in {} in FreeFlowy",
       param.mentioner_name, param.mentioned_page_name
     );
     self

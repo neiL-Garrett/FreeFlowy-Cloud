@@ -2,7 +2,7 @@
 {% extends "layouts/base.html" %}
 
 <!-- prettier-ignore -->
-{% block title %} AppFlowy Cloud Login {% endblock %}
+{% block title %} FreeFlowy Cloud Login {% endblock %}
 
 <!-- prettier-ignore -->
 {% block head %}
@@ -17,7 +17,7 @@
     <div id="login-splash">
       {% include "../assets/logo.html" %}
     </div>
-    <h2>Welcome to AppFlowy</h3>
+    <h2>Welcome to FreeFlowy</h2>
     <form>
       {% if let Some(redirect_to) = redirect_to %}
         <input type="hidden" name="redirect_to" value="{{ redirect_to }}">
@@ -114,7 +114,7 @@
     <span> &nbsp </span>
     <div style="max-width: 256px">
       <small style="color: #888; text-align: center; display: block">
-        By clicking "Continue" above, you agreed to AppFlowy's
+        By clicking "Continue" above, you agreed to FreeFlowy's
         <a href="https://appflowy.io/terms">Terms</a> and
         <a href="https://appflowy.io/privacy">Privacy Policy</a>.
       </small>
