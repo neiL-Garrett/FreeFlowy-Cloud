@@ -161,7 +161,7 @@
           "last_modified": 1723792576,
           "field_type": 0,
           "created_at": 1723792501,
-          "data": "Follow us on Twitter @appflowy"
+          "data": "Follow us on Twitter @freeflowy"
         }
       },
       "height": 60,
@@ -218,7 +218,7 @@
           "last_modified": 1723792623,
           "created_at": 1723792611,
           "field_type": 0,
-          "data": "Install AppFlowy Mobile"
+          "data": "Install FreeFlowy Mobile"
         },
         "SqwRg1": { "field_type": 3, "data": "CEZD" }
       },
@@ -233,7 +233,7 @@
       "cells": {
         "phVRgL": {
           "last_modified": 1723792862,
-          "data": "Love AppFlowy and open source",
+          "data": "Love FreeFlowy and open source",
           "field_type": 0,
           "created_at": 1723792815
         },
@@ -262,7 +262,7 @@
         },
         "phVRgL": {
           "field_type": 0,
-          "data": "Create an AppFlowy Cloud account"
+          "data": "Create an FreeFlowy Cloud account"
         },
         "SqwRg1": {
           "created_at": 1723792881,

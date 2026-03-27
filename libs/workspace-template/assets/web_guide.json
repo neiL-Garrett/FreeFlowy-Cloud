@@ -7,12 +7,12 @@
         "level": 1,
         "delta": [
           {
-            "insert": "AppFlowy is right in "
+            "insert": "FreeFlowy is right in "
           },
           {
             "insert": "your browser",
             "attributes": {
-              "href": "https://appflowy.com/"
+              "href": "https://github.com/neiL-Garrett/FreeFlowy"
             }
           }
         ]

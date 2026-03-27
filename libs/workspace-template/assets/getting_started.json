@@ -3,7 +3,7 @@
   "children": [
     {
       "type": "heading",
-      "data": { "level": 2, "delta": [{ "insert": "Welcome to AppFlowy" }] }
+      "data": { "level": 2, "delta": [{ "insert": "Welcome to FreeFlowy" }] }
     },
     {
       "type": "heading",
@@ -33,7 +33,7 @@
               { "insert": " " },
               {
                 "insert": "link",
-                "attributes": { "href": "https://appflowy.io/download" }
+                "attributes": { "href": "https://github.com/neiL-Garrett/FreeFlowy" }
               }
             ]
           }
@@ -119,7 +119,7 @@
       "data": {
         "delta": [
           {
-            "insert": "❤️Love AppFlowy and open source? Follow our latest product updates:"
+            "insert": "❤️Love FreeFlowy and open source? Follow our latest product updates:"
           }
         ]
       }
@@ -133,7 +133,7 @@
             "insert": "Twitter",
             "attributes": { "href": "https://twitter.com/appflowy" }
           },
-          { "insert": ": @appflowy" }
+          { "insert": ": @freeflowy" }
         ]
       }
     },
@@ -146,7 +146,7 @@
             "insert": "Reddit",
             "attributes": { "href": "https://www.reddit.com/r/AppFlowy/" }
           },
-          { "insert": ": r/appflowy" }
+          { "insert": ": r/FreeFlowy" }
         ]
       }
     },
@@ -158,7 +158,7 @@
           {
             "insert": "Github",
             "attributes": {
-              "href": "https://github.com/AppFlowy-IO/AppFlowy"
+              "href": "https://github.com/neiL-Garrett/FreeFlowy"
             }
           }
         ]

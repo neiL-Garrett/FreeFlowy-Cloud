@@ -5,7 +5,7 @@
       "type": "heading",
       "data": {
         "level": 1,
-        "delta": [{ "insert": "AppFlowy Desktop on macOS, Windows, and Linux" }]
+        "delta": [{ "insert": "FreeFlowy Desktop on macOS, Windows, and Linux" }]
       }
     },
     {
@@ -14,7 +14,7 @@
         "delta": [
           {
             "insert": "Download",
-            "attributes": { "href": "https://appflowy.io/download" }
+            "attributes": { "href": "https://github.com/neiL-Garrett/FreeFlowy" }
           },
           { "insert": " " }
         ]
@@ -244,11 +244,11 @@
         "images": [
           {
             "type": 1,
-            "url": "https://github.com/AppFlowy-IO/AppFlowy/blob/main/doc/readme/desktop_guide_1.jpg?raw=true"
+            "url": "https://github.com/neiL-Garrett/FreeFlowy/blob/main/doc/readme/desktop_guide_1.jpg?raw=true"
           },
           {
             "type": 1,
-            "url": "https://github.com/AppFlowy-IO/AppFlowy/blob/main/doc/readme/desktop_guide_2.jpg?raw=true"
+            "url": "https://github.com/neiL-Garrett/FreeFlowy/blob/main/doc/readme/desktop_guide_2.jpg?raw=true"
           }
         ]
       }
