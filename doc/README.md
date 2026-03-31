@@ -1,4 +1,9 @@
 # Docs
-- Directory to contain information about usage and development.
-- [Appflowy Cloud Deployment](./DEPLOYMENT.md)
-- [Appflowy with Cloud](https://docs.appflowy.io/docs/guides/appflowy/self-hosting-appflowy)
+
+Directory for FreeFlowy Cloud usage and development documentation.
+
+- [Deployment](./DEPLOYMENT.md)
+- [Authentication and billing behavior](./AUTHENTICATION.md)
+- [EC2 self-host guide](./EC2_SELF_HOST_GUIDE.md)
+- [Known limitations](./KNOWN_LIMITATIONS.md)
+- [Architecture and codebase guide](./GUIDE.md)
